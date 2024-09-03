@@ -1264,8 +1264,11 @@ function Sidebar:create_input()
       Path.history.save(self.code.bufnr, chat_history)
     end
 
+    local project_context = Utils.repo_map.get_repo_map()
+
     Llm.stream({
       bufnr = self.code.bufnr,
+      project_context = vim.json.encode(project_context),
       file_content = content_with_line_numbers,
       code_lang = filetype,
       selected_code = selected_code_content_with_line_numbers,

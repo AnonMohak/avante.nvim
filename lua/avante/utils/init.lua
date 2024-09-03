@@ -5,6 +5,7 @@ local lsp = vim.lsp
 ---@class avante.utils: LazyUtilCore
 ---@field tokens avante.utils.tokens
 ---@field root avante.utils.root
+---@field repo_map avante.utils.repo_map
 local M = {}
 
 setmetatable(M, {
@@ -446,7 +447,7 @@ function M.get_indentation(code) return code:match("^%s*") or "" end
 --- remove indentation from code: spaces or tabs
 function M.remove_indentation(code) return code:gsub("^%s*", "") end
 
-local function relative_path(absolute)
+function M.relative_path(absolute)
   local relative = fn.fnamemodify(absolute, ":.")
   if string.sub(relative, 0, 1) == "/" then return fn.fnamemodify(absolute, ":t") end
   return relative
@@ -464,7 +465,7 @@ function M.get_doc()
   local doc = {
     uri = params.textDocument.uri,
     version = api.nvim_buf_get_var(0, "changedtick"),
-    relativePath = relative_path(absolute),
+    relativePath = M.relative_path(absolute),
     insertSpaces = vim.o.expandtab,
     tabSize = fn.shiftwidth(),
     indentSize = fn.shiftwidth(),
@@ -512,6 +513,31 @@ function M.debounce(func, delay)
 
     return timer_id
   end
+end
+
+function M.get_project_root() return M.root.get() end
+
+-- Get recent filepaths in the same project and same file ext
+function M.get_recent_filepaths(limit, filenames)
+  local project_root = M.get_project_root()
+  local file_ext = fn.expand("%:e")
+  local oldfiles = vim.v.oldfiles
+  local recent_files = {}
+
+  for _, file in ipairs(oldfiles) do
+    if vim.startswith(file, project_root) and fn.fnamemodify(file, ":e") == file_ext then
+      if filenames and #filenames > 0 then
+        for _, filename in ipairs(filenames) do
+          if file:find(filename) then table.insert(recent_files, file) end
+        end
+      else
+        table.insert(recent_files, file)
+      end
+      if #recent_files >= (limit or 10) then break end
+    end
+  end
+
+  return recent_files
 end
 
 return M

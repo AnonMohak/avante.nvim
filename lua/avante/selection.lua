@@ -392,9 +392,11 @@ function Selection:create_editing_input()
     end
 
     local filetype = api.nvim_get_option_value("filetype", { buf = code_bufnr })
+    local project_context = Utils.repo_map.get_repo_map()
 
     Llm.stream({
       bufnr = code_bufnr,
+      project_context = vim.json.encode(project_context),
       file_content = code_content,
       code_lang = filetype,
       selected_code = self.selection.content,
